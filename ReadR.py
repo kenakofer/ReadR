@@ -80,13 +80,18 @@ def fill_word_queue(words):
 	if word_num<0:
 		word_num=0
 		word_queue.append('________BEGINNING_OF_FILE________')
-	elif word_num>len(ALL_WORDS)-1:
+	elif word_num>=len(ALL_WORDS)-1:
 		word_num=len(ALL_WORDS)-1
 		word_queue.append('___________END_OF_FILE___________')
 	else:
-		for i in range(words):
-			word_queue.append(ALL_WORDS[word_num])
-			word_num+=1
+		try:
+			for i in range(words):
+				word_queue.append(ALL_WORDS[word_num])
+				word_num+=1
+		except IndexError:
+			word_num=len(ALL_WORDS)-1
+			word_queue.append('___________END_OF_FILE___________')
+
 
 #Uses the word queue to decide how much to put in a phrase (which is printed at once on the screen)
 def build_phrase():
