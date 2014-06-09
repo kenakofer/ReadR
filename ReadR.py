@@ -11,6 +11,7 @@ import termios
 import threading
 from math import log
 import argparse
+import curses
 
 parser=argparse.ArgumentParser(description='User-friendly colorful command line speed reader, focused on comprehension, written in python.')
 parser.add_argument('FILE', type=argparse.FileType('r'), action='store', help='The text file to read')
@@ -259,12 +260,20 @@ def calib_wpm(iterations):
 
 def print_phrase():
 	global phrase
-	sys.stdout.write('\033[2K\r')	#Resets the line
+	#sys.stdout.write('\033[2K\r')	#Resets the line
+	sys.stdout.write('\r')
 	sys.stdout.write(phrase)
 	sys.stdout.flush()		#Causes the change to have effect, since there was no line break.
+	#print('\r',end='')
+	#print(phrase,end='')
+
+	#win.clear()
+	#win.addstr(phrase)
+	#win.refresh()
 
 
 
+#win = curses.initscr()
 threading.Thread(target=command_listener).start()
 f=args.FILE
 load_words()
