@@ -9,9 +9,7 @@ import os
 import tty
 import termios
 import threading
-from math import log
 import argparse
-import curses
 
 parser=argparse.ArgumentParser(description='User-friendly colorful command line speed reader, focused on comprehension, written in python.')
 parser.add_argument('FILE', type=argparse.FileType('r'), action='store', help='The text file to read')
@@ -34,7 +32,7 @@ line_num=0		#The current line in the file
 word_num=0		#Word counter
 time_elapse=0		#Cumulative time delay
 quotes=0		#Whether the reading is inside quotes, for the highlight_speech option. 0 is outside, 1 is inside, 2 is inside, but on the last phrase.
-wpm=args.wpm			#Approximate words per minute, though exact delays on words will vary with commonality or length.
+wpm=args.wpm		#Approximate words per minute, though exact delays on words will vary with commonality or length.
 wpm_calib=1.56		#Assists with keeping the average wpm close to the above value.  This will vary based on wpm and the format and style of the work.
 paused=False
 chars_in_phrase=args.phrase_length	#If neighboring words contain these or fewer characters, they will be lumped into one printed phrase, such as 'in the' or 'I was in'.  spaces don't count
@@ -66,7 +64,7 @@ QUOTE=CYAN
 STATUSLINE=NONE
 
 
-
+#Inputs the whole file to an array, for easy navigation
 def load_words():
 	global ALL_WORDS
 	for line in f:
@@ -76,6 +74,7 @@ def load_words():
 		else:
 			ALL_WORDS+=line.split()
 
+#Prepares words from the ALL_WORDS array for imminent display.
 def fill_word_queue(words):
 	global word_queue, word_num
 	if word_num<0:
@@ -119,7 +118,7 @@ def build_phrase():
 			quotes=2
 	return phrase
 	
-
+#Returns the length of time (in seconds) for the phrase to display
 def get_delay(phrase):
 	global wpm, line_pause, word_num, time_elapse, wpm_calib, steady_speed
 	if steady_speed:
@@ -137,6 +136,7 @@ def get_delay(phrase):
 
 	return time
 
+#Adds padding and pretty formatting to the phrase margins
 def phrase_format(o, p):
 	global STATUSLINE, QUOTE, TEXT, BORDER
 	phrase=p
@@ -166,7 +166,8 @@ def phrase_format(o, p):
 		phrase+=BORDER+'|'
 
 	return phrase
-	
+
+#Listens for key presses in the terminal
 def get_character():
 	fd = sys.stdin.fileno()
 	old_settings = termios.tcgetattr(fd)
@@ -177,6 +178,7 @@ def get_character():
 	    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 	return ch
 
+#Parses key presses for commands
 def command_listener():
 	global wpm, paused, word_num, bump
 	sleep(.5)
@@ -214,6 +216,7 @@ def command_listener():
 
 			#print('Unknown character:',char)
 
+#Formats the interface
 def setup():
 	global phrase, BORDER, FOCUSLINE, CONTROLS
 	if not minimalist:
@@ -258,22 +261,17 @@ def calib_wpm(iterations):
 	else:
 		calib_wpm(iterations)
 
+#Clears the line, and prints the new phrase.
 def print_phrase():
 	global phrase
-	#sys.stdout.write('\033[2K\r')	#Resets the line
-	sys.stdout.write('\r')
+	sys.stdout.write('\r')		#Move cursor to beginning of line
 	sys.stdout.write(phrase)
 	sys.stdout.flush()		#Causes the change to have effect, since there was no line break.
-	#print('\r',end='')
-	#print(phrase,end='')
-
-	#win.clear()
-	#win.addstr(phrase)
-	#win.refresh()
 
 
 
-#win = curses.initscr()
+
+#MAIN
 threading.Thread(target=command_listener).start()
 f=args.FILE
 load_words()
@@ -297,5 +295,5 @@ while True:
 	phrase=build_phrase()
 	delay=get_delay(phrase)
 	phrase=phrase_format(offset, phrase)
-	threading.Thread(target=print_phrase).start()	#This saves a slight amount of time error in the maintaining wpm.
+	threading.Thread(target=print_phrase).start()	#This saves a slight amount of time error in maintaining wpm.
 	sleep(delay)
