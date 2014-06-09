@@ -5,7 +5,7 @@ ReadR is a python3 command line speed reader for plain text files, with a user-f
 
 There has recently been a swarm of newly created speed reading applications, even a few terminal-based ones.  How is this one different?
 
-*Features*
+**Features**
 
 1. Offers an intuitive interface, with a control panel permanently visible by default.  Single character presses can alter wpm and navigate within the document.
 
@@ -21,13 +21,13 @@ There has recently been a swarm of newly created speed reading applications, eve
 
 7. Written in one short python script, with in-code comments, for a low footprint and easy modification.
 
-*Bugs*
+**Bugs**
 
 1. Terminal must be wide enough to prevent newlines being printed.
 
 2. Ctrl-C does not kill the application, because of multiple threads.  Must use "Q"
 
-*Features to add*
+**Features to add**
 
 1. Option for deciding focus letter.  The current behavior is just to center the phrase, which has not hindered speed or comprehension in my experience.
 
@@ -37,7 +37,7 @@ There has recently been a swarm of newly created speed reading applications, eve
 
 4. Showing the context of the current phrase when paused, for easier navigation.
 
-*The Controvery of Speed Reading*
+**The Controvery of Speed Reading**
 (This has nothing to do with this particular application, but is good to know.)
 
 There is great disagreement over whether or not speed reading "works." To be more specific, speed reading may or may not actually increase your comprehensive ability, increase your casual reading speed, or make you lose weight. Adding to the confusion, there are some speed readers who swear by the phrase-flashing applications (treadmill readers), while others insist on the organic approach of regulating your own speed in a physical book, so that your eyes don't become couch potatoes. One can find articles and statistics advocating every approach, so you should experiment before making a large scale commitment to any particular method.
