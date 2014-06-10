@@ -15,11 +15,13 @@ There has recently been a swarm of newly created speed reading applications, eve
 
 4. Has option to color the inside of quotation marks ("...") differently, using the --color-quotes option.  This is especially useful in the comprehension of novels, when one can easily get lost as the dialogue flies by. 
 
-5. Colorfully formatted interface.  Yes, I know it's a command line application.  The color scheme is easily changed or disabled.
+5. Uses a bookmarks file to store your location in a work, and starts there the next time you read the file.
 
-6. For the die-hard functional utilitarianists, one can disable the frivolous, trifling interface with the --minimalist option.
+6. Colorfully formatted interface.  Yes, I know it's a command line application.  The color scheme is easily changed or disabled.
 
-7. Written in one short python script, with in-code comments, for a low footprint and easy modification.
+7. For the die-hard functional utilitarianists, one can disable the frivolous, trifling interface with the --minimalist option.
+
+8. Written in one short python script, with in-code comments, for a low footprint and easy modification.
 
 **Bugs**
 
@@ -33,9 +35,7 @@ There has recently been a swarm of newly created speed reading applications, eve
 
 2. Option to parse command line output instead of a file.
  
-3. A bookmarks file, to record one's position in a larger work.
-
-4. Showing the context of the current phrase when paused, for easier navigation.
+3. Showing the context of the current phrase when paused, for easier navigation.
 
 **The Controvery of Speed Reading**
 (This has nothing to do with this particular application, but is good to know.)

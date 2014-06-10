@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-#TODO bookmarks, context showing on pause, maybe add focus letter.
+#TODO speed isn't accurate, context showing on pause, maybe add focus letter.
 
 
 from time import sleep
@@ -11,6 +11,7 @@ import termios
 import threading
 import argparse
 
+bookmarks_file = os.path.dirname(os.path.realpath(__file__))+'/bookmarks'
 parser=argparse.ArgumentParser(description='User-friendly colorful command line speed reader, focused on comprehension, written in python.')
 parser.add_argument('FILE', type=argparse.FileType('r'), action='store', help='The text file to read')
 parser.add_argument('-w', '--wpm', type=int, action='store', default=350, help='The words per minute at startup. Default 350')
@@ -18,13 +19,8 @@ parser.add_argument('-p', '--phrase-length', type=int, action='store', default=7
 parser.add_argument('-s', '--steady-speed', action='store_true', help="Do not give special calculation to a phrase's display time, but show each phrase strictly for 60/wpm seconds")
 parser.add_argument('-c', '--color-quotes', action='store_true', help='Colors the text inside quotation marks ("...") differently')
 parser.add_argument('-m', '--minimalist', action='store_true', help='Remove the interface. Keep only the flashing words. Note that this does not affect any of the controls, or color.')
-
 args = parser.parse_args()
-
-
-
-
-filename=args.FILE
+file_name=args.FILE.name.split('/')[-1]
 ALL_WORDS=[]		#Loads every word in the file for easy navigation later
 word_queue=[]		#The lineup of words to be printed on the screen, with the word at [0] being next.
 phrase=''		#The current phrase being displayed, with every edit and format
@@ -70,8 +66,11 @@ def load_words():
 	for line in f:
 		line = line.replace('  ',' ').strip()
 		if line == '':
-			ALL_WORDS.append('<NEWLINE>')
+			if nl<2:
+				ALL_WORDS.append('<NEWLINE>')
+			nl+=1
 		else:
+			nl=0
 			ALL_WORDS+=line.split()
 
 #Prepares words from the ALL_WORDS array for imminent display.
@@ -96,6 +95,7 @@ def fill_word_queue(words):
 #Uses the word queue to decide how much to put in a phrase (which is printed at once on the screen)
 def build_phrase():
 	global word_queue, chars_in_phrase, quotes, highlight_speech
+
 	#First, make sure there are enough words loaded
 	while len(word_queue) < 10:
 		fill_word_queue(10)
@@ -131,8 +131,10 @@ def get_delay(phrase):
 	time=words/(wpm*wpm_calib)*60  #All words equal, this is the time the phrase should be displayed for (in seconds).
 	time*=.8**(words-1) #Cut off a bit of time for phrases like 'I was a'. This allows for some extra time on bigger words (next line)
 	time*=1.07**(chars) #Add a little bit of time for the longer words.
-	if phrase.endswith('?') or phrase.endswith('."') or phrase.endswith('?"'):
-		time*=1.1
+	if phrase.endswith('.') or phrase.endswith('?') or phrase.endswith('"'):
+		time*=1.5
+	elif phrase.endswith(';') or phrase.endswith(','):
+		time*=1.2
 
 	return time
 
@@ -158,7 +160,7 @@ def phrase_format(o, p):
 		phrase=TEXT+phrase+NONE
 	#Add the context of the application format, with borders, and status on the sides
 	if not minimalist:
-		phrase=BORDER+'|'+phrase+' |'+STATUSLINE+UNDERLINE+' SetWPM: '+str(wpm)+', ActualWPM: '+str(int(actual_wpm*10)/10)+', WordNum: '+str(word_num-5)
+		phrase=BORDER+'|'+phrase+'|'+STATUSLINE+UNDERLINE+' WPM: '+str(int(actual_wpm+.5))+', WordNum: '+str(word_num-5)
 	if word_num>5: 
 		for i in range(0,6-len(str(word_num-5))):
 			phrase+=' '
@@ -191,6 +193,7 @@ def command_listener():
 		elif char=='p':
 			paused=not paused
 		elif char=='q':
+			write_bookmarks()
 			os._exit(0)
 		elif char=='.':
 			del word_queue[:]
@@ -222,10 +225,10 @@ def setup():
 	if not minimalist:
 		os.system('clear')
 	#	sys.stdout.write(BORDER+CONTROLS+'Q:quit | P:pause | +/-:wpm up/down | >/<:Move 200 words forward/backward | ./,:Move only 50 words\n') 
-		sys.stdout.write(BORDER+UNDERLINE+' ReadR_v_1_0_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n')
+		sys.stdout.write(BORDER+UNDERLINE+' ReadR_v_1_2_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'+/-  wpm up/down\n')
-		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'</>  200 words back/forward\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'./,  50  words back/forward\n')
+		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'</>  200 words back/forward\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'P    pause\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'Q    quit\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |___________________________\n')
@@ -240,14 +243,17 @@ def calib_wpm(iterations):
 	save_word_queue+=word_queue
 	del word_queue[:]
 	save_word_num=word_num
-	word_num=0
+#	word_num=0
 	time_elapse=0
 	phrase=''
-	while word_num < 200 and phrase !='___________END_OF_FILE___________':
+	count=0
+	while count < 200 and phrase !='___________END_OF_FILE___________':
 		phrase=build_phrase()
+		if phrase != '<NEWLINE>':
+			count+=len(phrase.split())
 		delay=get_delay(phrase)
 		time_elapse+=delay
-	actual_wpm=word_num/time_elapse*60
+	actual_wpm=count/time_elapse*60
 	wpm_calib=wpm_calib*(wpm/actual_wpm)
 	#print('WPM:',wpm,'Actual:',actual_wpm)
 	#print('Recalibrated WPM: ',wpm_calib)
@@ -268,14 +274,41 @@ def print_phrase():
 	sys.stdout.write(phrase)
 	sys.stdout.flush()		#Causes the change to have effect, since there was no line break.
 
+def write_bookmarks():
+	global word_num, bookmarks
+	try:
+		bookmarks[file_name] = word_num
+		writer = open(bookmarks_file, 'w')
+		for i in range(0,len(bookmarks)):
+			writer.write(sorted(bookmarks.keys())[i]+'\t'+str(sorted(bookmarks.values())[i])+'\n')
+		writer.close()
+	except PermissionError:
+		print()
+		print()
+		print('You do not have write permission for bookmarks file \''+bookmarks_file+'\'. You most allow write access to save bookmarks')
+
+def load_bookmarks():
+	global bookmarks, word_num;
+	try:
+		bookmarks={}
+		for line in open(bookmarks_file, 'r'):
+			bookmarks[line.split()[0]] = int(line.split()[1])
+			if line.split()[0]==file_name:
+				word_num = int(line.split()[1])-25
+	except PermissionError:
+		print('Was unable to read the bookmarks file')
+	except FileNotFoundError:
+		print('Bookmarks file does not exist. It will be created on exit.')
+
 
 
 
 #MAIN
 threading.Thread(target=command_listener).start()
+load_bookmarks()
 f=args.FILE
 load_words()
-calib_wpm(5)
+calib_wpm(6)
 i=0
 print('Press Q to quit...')
 print('')
