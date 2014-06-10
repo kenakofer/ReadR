@@ -23,11 +23,13 @@ There has recently been a swarm of newly created speed reading applications, eve
 
 8. Written in one short python script, with in-code comments, for a low footprint and easy modification.
 
+
 **Bugs**
 
 1. Terminal must be wide enough to prevent newlines being printed (about 75 characters). 
 
 2. Ctrl-C does not kill the application, because of multiple threads.  Must use "Q"
+
 
 **Features to add**
 
@@ -36,6 +38,7 @@ There has recently been a swarm of newly created speed reading applications, eve
 2. Option to parse command line output instead of a file.
  
 3. Showing the context of the current phrase when paused, for easier navigation.
+
 
 **The Controvery of Speed Reading**
 (This has nothing to do with this particular application, but is good to know.)
