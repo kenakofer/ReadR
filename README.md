@@ -25,7 +25,7 @@ There has recently been a swarm of newly created speed reading applications, eve
 
 **Bugs**
 
-1. Terminal must be wide enough to prevent newlines being printed.
+1. Terminal must be wide enough to prevent newlines being printed (about 75 characters). 
 
 2. Ctrl-C does not kill the application, because of multiple threads.  Must use "Q"
 
