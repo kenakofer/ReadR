@@ -114,7 +114,7 @@ def build_phrase():
 		#Check for starting or ending quotations
 		if phrase.startswith('"'):
 			quotes=1
-		if phrase.endswith('"'):
+		if phrase.endswith('"') or (len(phrase)>=2 and phrase[-2]=='"'):
 			quotes=2
 	return phrase
 	
@@ -131,16 +131,13 @@ def get_delay(phrase):
 	time=words/(wpm*wpm_calib)*60  #All words equal, this is the time the phrase should be displayed for (in seconds).
 	time*=.8**(words-1) #Cut off a bit of time for phrases like 'I was a'. This allows for some extra time on bigger words (next line)
 	time*=1.07**(chars) #Add a little bit of time for the longer words.
-	if phrase.endswith('.') or phrase.endswith('?') or phrase.endswith('"'):
-		time*=1.5
-	elif phrase.endswith(';') or phrase.endswith(','):
+	if phrase.endswith('.') or phrase.endswith('?') or phrase.endswith(';') or phrase.endswith('"'):
 		time*=1.2
-
 	return time
 
 #Adds padding and pretty formatting to the phrase margins
 def phrase_format(o, p):
-	global STATUSLINE, QUOTE, TEXT, BORDER
+	global STATUSLINE, QUOTE, TEXT, BORDER, quotes
 	phrase=p
 	if phrase=='<NEWLINE>':
 		phrase=' '*2*(offset+1)
@@ -154,7 +151,7 @@ def phrase_format(o, p):
 			phrase+=' '
 	
 	#Additional formatting, including different colored quotes
-	if quotes:
+	if quotes!=0:
 		phrase=QUOTE+phrase+NONE
 	else:
 		phrase=TEXT+phrase+NONE
@@ -225,7 +222,7 @@ def setup():
 	if not minimalist:
 		os.system('clear')
 	#	sys.stdout.write(BORDER+CONTROLS+'Q:quit | P:pause | +/-:wpm up/down | >/<:Move 200 words forward/backward | ./,:Move only 50 words\n') 
-		sys.stdout.write(BORDER+UNDERLINE+' ReadR_v_1_2_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n')
+		sys.stdout.write(BORDER+UNDERLINE+' ReadR_v_1_2_1_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'+/-  wpm up/down\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'./,  50  words back/forward\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'</>  200 words back/forward\n')
@@ -237,12 +234,13 @@ def setup():
 
 #Each iteration improves the accuracy of wpm_calib, by scanning through the document with the current settings, and recording the "time" it took.  Its proportional error compared to the desired wpm is used to improve the wpm_calib. 4 times seems to be enough to get within .5 wpm of desired.
 def calib_wpm(iterations):
-	global wpm, wpm_calib, word_num, actual_wpm, word_queue, calibrating
+	global wpm, wpm_calib, word_num, actual_wpm, word_queue, calibrating, quotes
 	calibrating=True
 	save_word_queue=[]
 	save_word_queue+=word_queue
 	del word_queue[:]
 	save_word_num=word_num
+	save_quotes=quotes
 #	word_num=0
 	time_elapse=0
 	phrase=''
@@ -258,6 +256,7 @@ def calib_wpm(iterations):
 	#print('WPM:',wpm,'Actual:',actual_wpm)
 	#print('Recalibrated WPM: ',wpm_calib)
 	word_num=save_word_num
+	quotes=save_quotes
 	del word_queue[:]
 	word_queue+=save_word_queue
 	iterations-=1
@@ -308,6 +307,7 @@ threading.Thread(target=command_listener).start()
 load_bookmarks()
 f=args.FILE
 load_words()
+quotes=0
 calib_wpm(6)
 i=0
 print('Press Q to quit...')
