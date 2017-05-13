@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 #TODO speed isn't accurate, context showing on pause, maybe add focus letter.
 
