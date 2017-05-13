@@ -222,9 +222,9 @@ def setup():
 	if not minimalist:
 		os.system('clear')
 	#	sys.stdout.write(BORDER+CONTROLS+'Q:quit | P:pause | +/-:wpm up/down | >/<:Move 200 words forward/backward | ./,:Move only 50 words\n') 
-		sys.stdout.write(BORDER+UNDERLINE+' ReadR_v_1_2_1_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n')
-		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'+/-  wpm up/down\n')
-		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'./,  50  words back/forward\n')
+		sys.stdout.write(BORDER+UNDERLINE+' ReadR_v_1_2_2_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n')
+		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'-/+  wpm down/up\n')
+		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+',/.  50  words back/forward\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'</>  200 words back/forward\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'P    pause\n')
 		sys.stdout.write(BORDER+'|                   '+FOCUSLINE+'   |   '+BORDER+'                    |'+CONTROLS+'Q    quit\n')
