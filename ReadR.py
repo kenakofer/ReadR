@@ -303,30 +303,31 @@ def load_bookmarks():
 
 
 #MAIN
-threading.Thread(target=command_listener).start()
-load_bookmarks()
-f=args.FILE
-load_words()
-quotes=0
-calib_wpm(6)
-i=0
-print('Press Q to quit...')
-print('')
-setup()
-bump=False
-calibrating=False
-while True:
-	while paused:
-		sleep(.1)
-		if bump:
-			break
-		if not paused:
-			sleep(.1)
-	while calibrating:
-		sleep(.05)
-	bump=False
-	phrase=build_phrase()
-	delay=get_delay(phrase)
-	phrase=phrase_format(offset, phrase)
-	threading.Thread(target=print_phrase).start()	#This saves a slight amount of time error in maintaining wpm.
-	sleep(delay)
+if __name__ == '__main__':
+    threading.Thread(target=command_listener).start()
+    load_bookmarks()
+    f=args.FILE
+    load_words()
+    quotes=0
+    calib_wpm(6)
+    i=0
+    print('Press Q to quit...')
+    print('')
+    setup()
+    bump=False
+    calibrating=False
+    while True:
+            while paused:
+                    sleep(.1)
+                    if bump:
+                            break
+                    if not paused:
+                            sleep(.1)
+            while calibrating:
+                    sleep(.05)
+            bump=False
+            phrase=build_phrase()
+            delay=get_delay(phrase)
+            phrase=phrase_format(offset, phrase)
+            threading.Thread(target=print_phrase).start()	#This saves a slight amount of time error in maintaining wpm.
+            sleep(delay)
