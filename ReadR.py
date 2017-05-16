@@ -12,33 +12,13 @@ import threading
 import argparse
 
 bookmarks_file = os.path.dirname(os.path.realpath(__file__))+'/bookmarks'
-parser=argparse.ArgumentParser(description='User-friendly colorful command line speed reader, focused on comprehension, written in python.')
-parser.add_argument('FILE', type=argparse.FileType('r'), action='store', help='The text file to read')
-parser.add_argument('-w', '--wpm', type=int, action='store', default=350, help='The words per minute at startup. Default 350')
-parser.add_argument('-p', '--phrase-length', type=int, action='store', default=7, help='The max number of summed characters (non-whitespace) that triggers clumping of short phrases, like "I am a". Default 7')
-parser.add_argument('-s', '--steady-speed', action='store_true', help="Do not give special calculation to a phrase's display time, but show each phrase strictly for 60/wpm seconds")
-parser.add_argument('-c', '--color-quotes', action='store_true', help='Colors the text inside quotation marks ("...") differently')
-parser.add_argument('-m', '--minimalist', action='store_true', help='Remove the interface. Keep only the flashing words. Note that this does not affect any of the controls, or color.')
-args = parser.parse_args()
-file_name=args.FILE.name.split('/')[-1]
-ALL_WORDS=[]		#Loads every word in the file for easy navigation later
-word_queue=[]		#The lineup of words to be printed on the screen, with the word at [0] being next.
-phrase=''		#The current phrase being displayed, with every edit and format
-line_num=0		#The current line in the file
-word_num=0		#Word counter
-time_elapse=0		#Cumulative time delay
-quotes=0		#Whether the reading is inside quotes, for the highlight_speech option. 0 is outside, 1 is inside, 2 is inside, but on the last phrase.
-wpm=args.wpm		#Approximate words per minute, though exact delays on words will vary with commonality or length.
-wpm_calib=1.56		#Assists with keeping the average wpm close to the above value.  This will vary based on wpm and the format and style of the work.
-paused=False
-chars_in_phrase=args.phrase_length	#If neighboring words contain these or fewer characters, they will be lumped into one printed phrase, such as 'in the' or 'I was in'.  spaces don't count
-line_pause=200/wpm	#How long (extra) to pause when an empty line (usually indicates a new paragraph or speaker) is encountered
-sentence_pause=80/wpm	#How long (extra) to pause at the end of a sentence (at . ." ? ?")
-highlight_speech=args.color_quotes	#Changes color of the printed text if inside quotes, eg "...".
-minimalist=args.minimalist		#Removes the pretty interface
-steady_speed=args.steady_speed		#Gives all phrases equal time.
 
-offset=22
+
+
+OFFSET=22       #Half the width of the phrase display area
+
+BEGINNING_FILE_MARKER = '________BEGINNING_OF_FILE________'
+END_FILE_MARKER = '___________END_OF_FILE___________'
 
 #Useful terminal definitions
 NONE='\033[00m'
@@ -52,13 +32,33 @@ BOLD='\033[1m'
 UNDERLINE='\033[4m'
 
 #Alter these for color and style alterations
-BORDER=NONE
-FOCUSLINE=GREEN
-CONTROLS=PURPLE
-TEXT=WHITE+BOLD
-QUOTE=CYAN
-STATUSLINE=NONE
+BORDER = NONE
+FOCUSLINE = GREEN
+CONTROLS = PURPLE
+TEXT = WHITE+BOLD
+QUOTE = CYAN
+STATUSLINE = NONE
 
+def get_args():
+    parser=argparse.ArgumentParser(description='User-friendly colorful command line speed reader, focused on comprehension, written in python.')
+    parser.add_argument('FILE', type=argparse.FileType('r'), action='store', help='The text file to read')
+    parser.add_argument('-w', '--wpm', type=int, action='store', default=350, help='The words per minute at startup. Default 350')
+    parser.add_argument('-p', '--phrase-length', type=int, action='store', default=7, help='The max number of summed characters (non-whitespace) that triggers clumping of short phrases, like "I am a". Default 7')
+    parser.add_argument('-s', '--steady-speed', action='store_true', help="Do not give special calculation to a phrase's display time, but show each phrase strictly for 60/wpm seconds")
+    parser.add_argument('-c', '--color-quotes', action='store_true', help='Colors the text inside quotation marks ("...") differently')
+    parser.add_argument('-m', '--minimalist', action='store_true', help='Remove the interface. Keep only the flashing words. Note that this does not affect any of the controls, or color.')
+    return parser.parse_args()
+
+def apply_args(args):
+    global wpm, chars_in_phrase, highlight_speech, minimalist, steady_speed, file_name, line_pause, sentence_pause
+    wpm = args.wpm		#Approximate words per minute, though exact delays on words will vary with commonality or length.
+    chars_in_phrase = args.phrase_length	#If neighboring words contain these or fewer characters, they will be lumped into one printed phrase, such as 'in the' or 'I was in'.  spaces don't count
+    highlight_speech = args.color_quotes	#Changes color of the printed text if inside quotes, eg "...".
+    minimalist = args.minimalist		#Removes the pretty interface
+    steady_speed = args.steady_speed		#Gives all phrases equal time.
+    file_name = args.FILE.name.split('/')[-1]
+    line_pause=200/wpm	#How long (extra) to pause when an empty line (usually indicates a new paragraph or speaker) is encountered
+    sentence_pause=80/wpm	#How long (extra) to pause at the end of a sentence (at . ." ? ?")
 
 #Inputs the whole file to an array, for easy navigation
 def load_words():
@@ -78,10 +78,10 @@ def fill_word_queue(words):
 	global word_queue, word_num
 	if word_num<0:
 		word_num=0
-		word_queue.append('________BEGINNING_OF_FILE________')
+		word_queue.append(BEGINNING_FILE_MARKER)
 	elif word_num>=len(ALL_WORDS)-1:
 		word_num=len(ALL_WORDS)-1
-		word_queue.append('___________END_OF_FILE___________')
+		word_queue.append(END_FILE_MARKER)
 	else:
 		try:
 			for i in range(words):
@@ -89,7 +89,7 @@ def fill_word_queue(words):
 				word_num+=1
 		except IndexError:
 			word_num=len(ALL_WORDS)-1
-			word_queue.append('___________END_OF_FILE___________')
+			word_queue.append(END_FILE_MARKER)
 
 
 #Uses the word queue to decide how much to put in a phrase (which is printed at once on the screen)
@@ -120,19 +120,17 @@ def build_phrase():
 	
 #Returns the length of time (in seconds) for the phrase to display
 def get_delay(phrase):
-	global wpm, line_pause, word_num, time_elapse, wpm_calib, steady_speed
 	if steady_speed:
 		return 60/wpm
 	if phrase=='<NEWLINE>':
 		return line_pause
-	words=len(phrase.split(' '))
-	#word_num+=words
-	chars=len(phrase)
-	time=words/(wpm*wpm_calib)*60  #All words equal, this is the time the phrase should be displayed for (in seconds).
-	time*=.8**(words-1) #Cut off a bit of time for phrases like 'I was a'. This allows for some extra time on bigger words (next line)
-	time*=1.07**(chars) #Add a little bit of time for the longer words.
+	words = len(phrase.split(' '))
+	chars = len(phrase)
+	time =  words/(wpm*wpm_calib) * 60  #All words equal, this is the time the phrase should be displayed for (in seconds).
+	time *= .8**(words-1) #Cut off a bit of time for phrases like 'I was a'. This allows for some extra time on bigger words (next line)
+	time *= 1.07**(chars) #Add a little bit of time for the longer words/phrases.
 	if phrase.endswith('.') or phrase.endswith('?') or phrase.endswith(';') or phrase.endswith('"'):
-		time*=1.2
+		time += sentence_pause
 	return time
 
 #Adds padding and pretty formatting to the phrase margins
@@ -140,7 +138,7 @@ def phrase_format(o, p):
 	global STATUSLINE, QUOTE, TEXT, BORDER, quotes
 	phrase=p
 	if phrase=='<NEWLINE>':
-		phrase=' '*2*(offset+1)
+		phrase=' '*2*(OFFSET+1)
 	#center the phrase with spaces on either side.  Note that it does not currently center on a vowel in the phrase, as some software does.
 	else:
 		i=0
@@ -234,7 +232,7 @@ def setup():
 
 #Each iteration improves the accuracy of wpm_calib, by scanning through the document with the current settings, and recording the "time" it took.  Its proportional error compared to the desired wpm is used to improve the wpm_calib. 4 times seems to be enough to get within .5 wpm of desired.
 def calib_wpm(iterations):
-	global wpm, wpm_calib, word_num, actual_wpm, word_queue, calibrating, quotes
+	global wpm_calib, word_num, actual_wpm, word_queue, calibrating, quotes
 	calibrating=True
 	save_word_queue=[]
 	save_word_queue+=word_queue
@@ -245,7 +243,7 @@ def calib_wpm(iterations):
 	time_elapse=0
 	phrase=''
 	count=0
-	while count < 200 and phrase !='___________END_OF_FILE___________':
+	while count < 200 and phrase != END_FILE_MARKER:
 		phrase=build_phrase()
 		if phrase != '<NEWLINE>':
 			count+=len(phrase.split())
@@ -259,12 +257,11 @@ def calib_wpm(iterations):
 	quotes=save_quotes
 	del word_queue[:]
 	word_queue+=save_word_queue
-	iterations-=1
-	if iterations<=0 or abs(wpm-actual_wpm)<1:
+	if iterations <= 1 or abs(wpm-actual_wpm) < 1:
 		calibrating=False
 		return
 	else:
-		calib_wpm(iterations)
+		calib_wpm(iterations - 1)
 
 #Clears the line, and prints the new phrase.
 def print_phrase():
@@ -304,6 +301,19 @@ def load_bookmarks():
 
 #MAIN
 if __name__ == '__main__':
+
+    ALL_WORDS=[]    #Loads every word in the file for easy navigation later
+    word_queue=[]   #The lineup of words to be printed on the screen, with the word at [0] being next.
+    phrase=''	    #The current phrase being displayed, with every edit and format
+    line_num=0	    #The current line in the file
+    word_num=0	    #Word counter
+    time_elapse=0   #Cumulative time delay
+    quotes=0	    #Whether the reading is inside quotes, for the highlight_speech option. 0 is outside, 1 is inside, 2 is inside, but on the last phrase.
+    wpm_calib=1.56  #Assists with keeping the average wpm close to the above value.  This will vary based on wpm and the format and style of the work.
+    paused=False
+
+    args = get_args()
+    apply_args(args)
     threading.Thread(target=command_listener).start()
     load_bookmarks()
     f=args.FILE
@@ -328,6 +338,6 @@ if __name__ == '__main__':
             bump=False
             phrase=build_phrase()
             delay=get_delay(phrase)
-            phrase=phrase_format(offset, phrase)
+            phrase=phrase_format(OFFSET, phrase)
             threading.Thread(target=print_phrase).start()	#This saves a slight amount of time error in maintaining wpm.
             sleep(delay)
